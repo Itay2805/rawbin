@@ -1,7 +1,6 @@
 package rawbin
 
 import (
-	"bytes"
 	"errors"
 )
 
@@ -10,10 +9,10 @@ var ErrNotPointer = errors.New("given value is not a pointer")
 
 // Marshaller ...
 type Marshaller interface {
-	RawMarshal(buffer *bytes.Buffer) error
+	RawMarshal(writer *Writer) error
 }
 
 // Unmarshaller ...
 type Unmarshaller interface {
-	RawUnmarshal(reader *bytes.Reader) error
+	RawUnmarshal(reader *Reader) error
 }

@@ -28,12 +28,12 @@ func TestEncodeDecodeStruct(t *testing.T) {
 	var val TestStruct
 
 	buffer := bytes.NewBuffer([]byte{})
-	err := EncodeToBytesBuffer(expected, buffer)
+	err := Encode(expected, buffer)
 	if err != nil {
 		t.Error(err)
 	}
 	reader := bytes.NewReader(buffer.Bytes())
-	err = DecodeFromBytesReader(&val, reader)
+	err = Decode(&val, reader)
 	if err != nil {
 		t.Error(err)
 	}

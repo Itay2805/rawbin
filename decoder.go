@@ -5,37 +5,30 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"reflect"
 )
 
-// DecodeFromBytes ...
-func DecodeFromBytes(value interface{}, data []byte) error {
-	return DecodeFromBytesReader(value, bytes.NewReader(data))
+// DecodeBytes is used for decoding data which is stored in a byte array
+func DecodeBytes(value interface{}, data []byte) error {
+	return Decode(value, bytes.NewReader(data))
 }
 
-// DecodeFromReader ...
-func DecodeFromReader(value interface{}, reader io.Reader) error {
-	b, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return err
-	}
-	return DecodeFromBytesReader(value, bytes.NewReader(b))
-}
-
-// DecodeFromBytesReader ...
-func DecodeFromBytesReader(value interface{}, reader *bytes.Reader) error {
+// Decode is used to decode data from a reader
+func Decode(value interface{}, r io.Reader) error {
 	reflectValue := reflect.ValueOf(value)
 	if reflectValue.Kind() != reflect.Ptr {
 		return ErrNotPointer
 	}
+
+	reader := Reader{r}
+
 	if reflect.Indirect(reflectValue).Kind() == reflect.Struct {
-		return decodeStruct(value, reader)
+		return decodeStruct(value, &reader)
 	}
-	return decodeValue(value, reader)
+	return decodeValue(value, &reader)
 }
 
-func decodeStruct(value interface{}, reader *bytes.Reader) error {
+func decodeStruct(value interface{}, reader *Reader) error {
 	reflectValue := reflect.Indirect(reflect.ValueOf(value))
 	for i := 0; i < reflectValue.NumField(); i++ {
 		field := reflectValue.Field(i)
@@ -61,19 +54,7 @@ func decodeStruct(value interface{}, reader *bytes.Reader) error {
 	return nil
 }
 
-// Always big endian for now
-
-// supports:
-//		BinerUnmarshaller (for custom types)
-//			built in supported types:
-//				binner.Varint
-// 				binner.Varlong
-//				binner.String (varint + data)
-//		int(8-64) & uint(8-64)
-// 		string (int16 + data)
-//		bool (true - 1, false - !1)
-
-func decodeValue(value interface{}, reader *bytes.Reader) error {
+func decodeValue(value interface{}, reader *Reader) error {
 	switch val := value.(type) {
 	case Unmarshaller:
 		return val.RawUnmarshal(reader)

@@ -1,6 +1,5 @@
 package rawbin
 
-import "bytes"
 import "encoding/binary"
 import "math"
 
@@ -11,16 +10,16 @@ import "fmt"
 type Varint int32
 
 // RawMarshal is used by rawbin to encode the data
-func (v Varint) RawMarshal(buffer *bytes.Buffer) error {
+func (v Varint) RawMarshal(Writer *Writer) error {
 	bytes := make([]byte, 5, 5)
 	size := binary.PutVarint(bytes, int64(v))
-	buffer.Write(bytes[:size])
-	return nil
+	_, err := Writer.Write(bytes[:size])
+	return err
 }
 
 // RawUnmarshal is used by rawbin to decode the data
 // TODO: Might need to write the reader because binary.ReadVarint is meant to read int64 and not int32 so it might read more then needed
-func (v *Varint) RawUnmarshal(reader *bytes.Reader) error {
+func (v *Varint) RawUnmarshal(reader *Reader) error {
 	i, err := binary.ReadVarint(reader)
 	if err != nil {
 		return err
@@ -37,15 +36,15 @@ func (v *Varint) RawUnmarshal(reader *bytes.Reader) error {
 type Varlong int64
 
 // RawMarshal is used by rawbin to encode the data
-func (v Varlong) RawMarshal(buffer *bytes.Buffer) error {
+func (v Varlong) RawMarshal(writer *Writer) error {
 	bytes := make([]byte, 10, 10)
 	size := binary.PutVarint(bytes, int64(v))
-	buffer.Write(bytes[:size])
-	return nil
+	_, err := writer.Write(bytes[:size])
+	return err
 }
 
 // RawUnmarshal is used by rawbin to decode the data
-func (v *Varlong) RawUnmarshal(reader *bytes.Reader) error {
+func (v *Varlong) RawUnmarshal(reader *Reader) error {
 	i, err := binary.ReadVarint(reader)
 	if err != nil {
 		return err
@@ -62,22 +61,25 @@ func (v *Varlong) RawUnmarshal(reader *bytes.Reader) error {
 type String string
 
 // RawMarshal is used by rawbin to encode the data
-func (v String) RawMarshal(buffer *bytes.Buffer) error {
+func (v String) RawMarshal(writer *Writer) error {
 	length := Varlong(len(v))
-	err := length.RawMarshal(buffer)
+	err := length.RawMarshal(writer)
 	if err != nil {
 		return err
 	}
-	_, err = buffer.WriteString(string(v))
+	_, err = writer.Write([]byte(v))
 	return err
 }
 
 // RawUnmarshal is used by rawbin to decode the data
-func (v *String) RawUnmarshal(reader *bytes.Reader) error {
+func (v *String) RawUnmarshal(reader *Reader) error {
 	var length Varlong
 	length.RawUnmarshal(reader)
 	bytes := make([]byte, length, length)
 	_, err := reader.Read(bytes)
+	if err != nil {
+		return err
+	}
 	*v = String(bytes)
-	return err
+	return nil
 }
